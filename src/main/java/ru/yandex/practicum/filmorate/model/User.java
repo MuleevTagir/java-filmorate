@@ -2,13 +2,13 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
 import jakarta.validation.constraints.*;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 
 @Data
 public class User {
     @NotNull
-    @Positive
     private int id;
 
     @NotBlank(message = "Электронная почта не может быть пустой")
@@ -27,7 +27,7 @@ public class User {
 
     @AssertTrue(message = "Имя для отображения будет изменено на логин, если оно пустое")
     private boolean isNameValid() {
-        if (this.name == null || this.name.isEmpty()) {
+        if (!StringUtils.hasText(this.name)) {
             this.name = this.login;
         }
         return true;

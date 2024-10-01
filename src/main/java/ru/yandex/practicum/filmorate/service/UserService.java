@@ -25,7 +25,7 @@ public class UserService {
     }
 
     public User update(User user) {
-        if (!this.userMap.containsKey(user.getId())) {
+        if (!isExist(user.getId())) {
             String errorMsg = String.format("Пользователь с id=%d не найден.", user.getId());
             log.error(errorMsg);
             throw new NotFoundException(errorMsg);
@@ -43,5 +43,9 @@ public class UserService {
 
     private int getNextId() {
         return ++id;
+    }
+
+    private boolean isExist(Integer key) {
+        return this.userMap.containsKey(key);
     }
 }

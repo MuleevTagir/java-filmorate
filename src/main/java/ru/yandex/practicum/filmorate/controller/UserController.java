@@ -24,12 +24,12 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User createNewUser(@Valid @RequestBody User user) {
+    public User create(@Valid @RequestBody User user) {
         return userService.create(user);
     }
 
     @PutMapping
-    public User updateUser(@Valid @RequestBody User user) {
+    public User update(@Valid @RequestBody User user) {
         return userService.update(user);
     }
 

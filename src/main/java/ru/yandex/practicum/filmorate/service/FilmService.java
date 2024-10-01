@@ -28,7 +28,7 @@ public class FilmService {
 
 
     public Film update(Film film) {
-        if (!this.filmMap.containsKey(film.getId())) {
+        if (!isExist(film.getId())) {
             String errorMsg = String.format("Фильм с id=%d не найден.", film.getId());
             log.error(errorMsg);
             throw new NotFoundException(errorMsg);
@@ -46,5 +46,9 @@ public class FilmService {
 
     private int getNextId() {
         return ++id;
+    }
+
+    private boolean isExist(Integer key) {
+        return this.filmMap.containsKey(key);
     }
 }

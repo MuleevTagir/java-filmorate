@@ -14,7 +14,6 @@ public class Film {
     private final LocalDate filmBeginReleaseDate = LocalDate.of(1895, 12, 18);
 
     @NotNull
-    @Positive
     private int id;
 
     @NotBlank(message = "Название фильма не может быть пустым")
