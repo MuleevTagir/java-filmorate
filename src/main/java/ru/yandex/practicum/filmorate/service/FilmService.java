@@ -1,54 +1,59 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-@Slf4j
 @Service
 public class FilmService {
 
+    private final FilmStorage filmStorage;
     private int id = 0;
 
-    private final Map<Integer, Film> filmMap = new HashMap<>();
-
-    public Film add(Film film) {
-        film.setId(getNextId());
-        filmMap.put(film.getId(), film);
-
-        log.info("Добавление фильма: {}.", film);
-        return film;
+    public FilmService(FilmStorage filmStorage) {
+        this.filmStorage = filmStorage;
     }
 
+    public Film add(Film film) {
+        film.setId(this.getNextId());
+        return filmStorage.addFilm(film);
+    }
 
     public Film update(Film film) {
-        if (!isExist(film.getId())) {
-            String errorMsg = String.format("Фильм с id=%d не найден.", film.getId());
-            log.error(errorMsg);
-            throw new NotFoundException(errorMsg);
-        }
+        filmStorage.getFilmById(film.getId());
+        return filmStorage.updateFilm(film);
+    }
 
-        this.filmMap.put(film.getId(), film);
-        log.info("Обновление фильма: {}.", film);
-        return film;
+    public Film getFilmById(int id) {
+        return filmStorage.getFilmById(id);
     }
 
     public List<Film> getAll() {
-        log.info("Список фильмов.");
-        return new ArrayList<>(filmMap.values());
+        return filmStorage.getAllFilms();
+    }
+
+    public void addLike(int filmId, int userId) {
+        Film film = filmStorage.getFilmById(filmId);
+        film.getLikes().add(userId);
+        filmStorage.updateFilm(film);
+    }
+
+    public void removeLike(int filmId, int userId) {
+        Film film = filmStorage.getFilmById(filmId);
+        film.getLikes().remove(userId);
+        filmStorage.updateFilm(film);
+    }
+
+    public List<Film> getPopularFilms(int count) {
+        return filmStorage.getAllFilms().stream()
+                .sorted((film1, film2) -> Integer.compare(film2.getLikes().size(), film1.getLikes().size()))
+                .limit(count)
+                .toList();
     }
 
     private int getNextId() {
         return ++id;
-    }
-
-    private boolean isExist(Integer key) {
-        return this.filmMap.containsKey(key);
     }
 }
