@@ -1,11 +1,13 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
@@ -34,13 +36,19 @@ public class InMemoryFilmStorage implements FilmStorage {
         return films.stream()
                 .filter(f -> f.getId() == id)
                 .findFirst()
-                .orElseThrow(
-                        () -> new NotFoundException("Фильм id=" + id + " не найден.")
-                );
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Фильм id=" + id + " не найден."));
     }
 
     @Override
     public List<Film> getAllFilms() {
         return films;
+    }
+
+    @Override
+    public List<Film> getPopularFilms(int count) {
+        return films.stream()
+                .sorted((film1, film2) -> Integer.compare(film2.getLikes().size(), film1.getLikes().size()))
+                .limit(count)
+                .toList();
     }
 }

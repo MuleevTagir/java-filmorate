@@ -20,12 +20,13 @@ public class UserService {
     }
 
     public User create(User user) {
-        user.setId(getNextId());
         log.info("Добавление пользователя: {}.", user);
+        user.setId(getNextId());
         return userStorage.add(user);
     }
 
     public User update(User user) {
+        log.info("Обновление пользователя: {}.", user);
         userStorage.update(user);
         return user;
     }
@@ -48,7 +49,7 @@ public class UserService {
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        if (user.getFriends().contains(friendId)) {
+        if (this.areFriends(user.getId(), friendId)) {
             throw new ValidationException("Пользователь уже добавлен в друзья");
         }
 
@@ -62,7 +63,7 @@ public class UserService {
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        if (!user.getFriends().contains(friendId)) {
+        if (!this.areFriends(user.getId(), friendId)) {
             return;
         }
 
