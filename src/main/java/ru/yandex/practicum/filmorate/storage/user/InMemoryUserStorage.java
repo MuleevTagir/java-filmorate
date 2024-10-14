@@ -1,14 +1,14 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Component
 public class InMemoryUserStorage implements UserStorage {
@@ -16,18 +16,20 @@ public class InMemoryUserStorage implements UserStorage {
     private final List<User> users = new ArrayList<>();
 
     @Override
-    public User getById(int id) {
-        return users.stream()
-                .filter(user -> user.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Пользователь с id=" + id + " не найден"));
+    public Optional<User> getUserById(int id) {
+        return users.stream().filter(user -> user.getId() == id).findFirst();
     }
 
     @Override
-    public User update(User user) {
-        int index = users.indexOf(getById(user.getId()));
-        users.set(index, user);
-        return user;
+    public User update(User user) throws NotFoundException {
+        Optional<User> existingUser = getUserById(user.getId());
+        if (existingUser.isPresent()) {
+            int index = users.indexOf(existingUser.get());
+            users.set(index, user);
+            return user;
+        } else {
+            throw new NotFoundException("Пользователь не найден");
+        }
     }
 
     @Override
@@ -42,10 +44,20 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public List<User> getFriends(int userId) {
-        User user = getById(userId);
+    public List<User> getFriends(int userId) throws NotFoundException {
+        User user = getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+
         return user.getFriends().stream()
-                .map(this::getById)
+                .map(friendId -> {
+                    try {
+                        return getUserById(friendId)
+                                .orElseThrow(() -> new NotFoundException("Friend with id " + friendId + " not found"));
+                    } catch (NotFoundException e) {
+                        return null;
+                    }
+                })
+                .filter(f -> !Objects.isNull(f))
                 .collect(Collectors.toList());
     }
 }

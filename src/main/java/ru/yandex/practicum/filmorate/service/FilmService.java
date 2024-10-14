@@ -2,11 +2,13 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -27,13 +29,14 @@ public class FilmService {
         return filmStorage.addFilm(film);
     }
 
-    public Film update(Film film) {
+    public Film update(Film film) throws NotFoundException {
         log.info("Обновление фильма: {}.", film);
-        filmStorage.getFilmById(film.getId());
+        filmStorage.getFilmById(film.getId())
+                .orElseThrow(() -> new NotFoundException("Фильм с таким id не найден"));
         return filmStorage.updateFilm(film);
     }
 
-    public Film getFilmById(int id) {
+    public Optional<Film> getFilmById(int id) {
         log.info("Получить фильм id: {}.", id);
         return filmStorage.getFilmById(id);
     }
@@ -43,23 +46,33 @@ public class FilmService {
         return filmStorage.getAllFilms();
     }
 
-    public void addLike(int filmId, int userId) {
-        log.info("Пользователь id= {} поставил like фильму id={}.", userId, filmId);
-        Film film = filmStorage.getFilmById(filmId);
-        film.getLikes().add(userStorage.getById(userId).getId());
+    public void addLike(int filmId, int userId) throws NotFoundException {
+        Film film = filmStorage.getFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм не найден"));
+        if (userStorage.getUserById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден");
+        }
+        film.getLikes().add(userId);
         filmStorage.updateFilm(film);
     }
 
-    public void removeLike(int filmId, int userId) {
-        log.info("Пользователь id= {} убрал like фильму id={}.", userId, filmId);
-        Film film = filmStorage.getFilmById(filmId);
-        film.getLikes().remove(userStorage.getById(userId).getId());
+    public void removeLike(int filmId, int userId) throws NotFoundException {
+        Film film = filmStorage.getFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм не найден"));
+        if (userStorage.getUserById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден");
+        }
+        film.getLikes().remove(userId);
         filmStorage.updateFilm(film);
     }
 
     public List<Film> getPopularFilms(int count) {
         log.info("Получить топ-{} фильмов.", count);
         return filmStorage.getPopularFilms(count);
+    }
+
+    public boolean existsById(int filmId) {
+        return filmStorage.getFilmById(filmId).isPresent();
     }
 
     private int getNextId() {
