@@ -5,15 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
-import java.util.Optional;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Slf4j
 @RestController
@@ -29,13 +25,8 @@ public class FilmController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Film getFilmById(@PathVariable int id) {
-        Optional<Film> film = filmService.getFilmById(id);
-        if (film.isPresent()) {
-            return film.get();
-        }
-
-        throw new ResponseStatusException(NOT_FOUND, "Фильм id=" + id + " не найден.");
+    public Film getFilmById(@PathVariable int id) throws NotFoundException {
+        return filmService.getFilmById(id);
     }
 
     @PostMapping
@@ -45,14 +36,8 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film update(@Valid @RequestBody Film film) {
-        Film f;
-        try {
-            f = filmService.update(film);
-        } catch (NotFoundException e) {
-            throw new ResponseStatusException(NOT_FOUND, e.getMessage());
-        }
-        return f;
+    public Film update(@Valid @RequestBody Film film) throws NotFoundException {
+        return filmService.update(film);
     }
 
     @GetMapping
@@ -69,21 +54,13 @@ public class FilmController {
 
     @PutMapping("/{id}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public void addLike(@PathVariable int id, @PathVariable int userId) {
-        try {
-            filmService.addLike(id, userId);
-        } catch (NotFoundException e) {
-            throw new ResponseStatusException(NOT_FOUND, e.getMessage());
-        }
+    public void addLike(@PathVariable int id, @PathVariable int userId) throws NotFoundException {
+        filmService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public void removeLike(@PathVariable int id, @PathVariable int userId) {
-        try {
-            filmService.removeLike(id, userId);
-        } catch (NotFoundException e) {
-            throw new ResponseStatusException(NOT_FOUND, e.getMessage());
-        }
+    public void removeLike(@PathVariable int id, @PathVariable int userId) throws NotFoundException {
+        filmService.removeLike(id, userId);
     }
 }
