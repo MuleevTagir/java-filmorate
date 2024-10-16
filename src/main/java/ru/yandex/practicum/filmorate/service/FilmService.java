@@ -1,10 +1,13 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaRatingStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
@@ -15,14 +18,16 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+
     private int id = 0;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("UserDbStorage") UserStorage userStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
     }
 
-    public Film add(Film film) {
+    public Film add(Film film) throws NotFoundException {
         log.info("Добавление фильма: {}.", film);
         film.setId(this.getNextId());
         return filmStorage.addFilm(film);
@@ -41,7 +46,7 @@ public class FilmService {
                 .orElseThrow(() -> new NotFoundException("Фильм с таким id не найден"));
     }
 
-    public List<Film> getAll() {
+    public List<Film> getAll() throws NotFoundException {
         log.info("Получить все фильмы.");
         return filmStorage.getAllFilms();
     }
@@ -66,12 +71,12 @@ public class FilmService {
         filmStorage.updateFilm(film);
     }
 
-    public List<Film> getPopularFilms(int count) {
+    public List<Film> getPopularFilms(int count) throws NotFoundException {
         log.info("Получить топ-{} фильмов.", count);
         return filmStorage.getPopularFilms(count);
     }
 
-    public boolean existsById(int filmId) {
+    public boolean existsById(int filmId) throws NotFoundException {
         return filmStorage.getFilmById(filmId).isPresent();
     }
 
