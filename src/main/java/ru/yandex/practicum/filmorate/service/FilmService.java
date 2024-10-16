@@ -4,51 +4,78 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
 public class FilmService {
 
+    private final FilmStorage filmStorage;
+    private final UserStorage userStorage;
     private int id = 0;
 
-    private final Map<Integer, Film> filmMap = new HashMap<>();
-
-    public Film add(Film film) {
-        film.setId(getNextId());
-        filmMap.put(film.getId(), film);
-
-        log.info("Добавление фильма: {}.", film);
-        return film;
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+        this.filmStorage = filmStorage;
+        this.userStorage = userStorage;
     }
 
+    public Film add(Film film) {
+        log.info("Добавление фильма: {}.", film);
+        film.setId(this.getNextId());
+        return filmStorage.addFilm(film);
+    }
 
-    public Film update(Film film) {
-        if (!isExist(film.getId())) {
-            String errorMsg = String.format("Фильм с id=%d не найден.", film.getId());
-            log.error(errorMsg);
-            throw new NotFoundException(errorMsg);
-        }
-
-        this.filmMap.put(film.getId(), film);
+    public Film update(Film film) throws NotFoundException {
         log.info("Обновление фильма: {}.", film);
-        return film;
+        filmStorage.getFilmById(film.getId())
+                .orElseThrow(() -> new NotFoundException("Фильм с таким id не найден"));
+        return filmStorage.updateFilm(film);
+    }
+
+    public Film getFilmById(int id) throws NotFoundException {
+        log.info("Получить фильм id: {}.", id);
+        return filmStorage.getFilmById(id)
+                .orElseThrow(() -> new NotFoundException("Фильм с таким id не найден"));
     }
 
     public List<Film> getAll() {
-        log.info("Список фильмов.");
-        return new ArrayList<>(filmMap.values());
+        log.info("Получить все фильмы.");
+        return filmStorage.getAllFilms();
+    }
+
+    public void addLike(int filmId, int userId) throws NotFoundException {
+        Film film = filmStorage.getFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм не найден"));
+        if (userStorage.getUserById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден");
+        }
+        film.getLikes().add(userId);
+        filmStorage.updateFilm(film);
+    }
+
+    public void removeLike(int filmId, int userId) throws NotFoundException {
+        Film film = filmStorage.getFilmById(filmId)
+                .orElseThrow(() -> new NotFoundException("Фильм не найден"));
+        if (userStorage.getUserById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден");
+        }
+        film.getLikes().remove(userId);
+        filmStorage.updateFilm(film);
+    }
+
+    public List<Film> getPopularFilms(int count) {
+        log.info("Получить топ-{} фильмов.", count);
+        return filmStorage.getPopularFilms(count);
+    }
+
+    public boolean existsById(int filmId) {
+        return filmStorage.getFilmById(filmId).isPresent();
     }
 
     private int getNextId() {
         return ++id;
-    }
-
-    private boolean isExist(Integer key) {
-        return this.filmMap.containsKey(key);
     }
 }
