@@ -59,7 +59,7 @@ public class UserController {
 
     @GetMapping("/{id}/friends/common/{otherId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+    public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) throws NotFoundException {
         return userService.getCommonFriends(id, otherId);
     }
 }

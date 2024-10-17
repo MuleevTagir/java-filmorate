@@ -31,7 +31,7 @@ public class FilmController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Film add(@Valid @RequestBody Film film) {
+    public Film add(@Valid @RequestBody Film film) throws NotFoundException {
         return filmService.add(film);
     }
 
@@ -42,13 +42,13 @@ public class FilmController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<Film> getAllFilms() {
+    public List<Film> getAllFilms() throws NotFoundException {
         return filmService.getAll();
     }
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
-    public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
+    public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) throws NotFoundException {
         return filmService.getPopularFilms(count);
     }
 

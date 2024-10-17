@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -16,7 +17,7 @@ public class UserService {
     private int id = 0;
     private final UserStorage userStorage;
 
-    public UserService(UserStorage userStorage) {
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -26,16 +27,27 @@ public class UserService {
         return userStorage.add(user);
     }
 
-    public User update(User user) throws NotFoundException {
-        log.info("Обновление пользователя: {}.", user);
-        userStorage.update(user);
-        return user;
+    public User add(User user) {
+        return userStorage.add(user);
     }
 
-    public boolean areFriends(int userId, int friendId) throws NotFoundException {
-        User user = userStorage.getUserById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
-        return user.getFriends().contains(friendId);
+    public User update(User user) throws NotFoundException {
+        log.info("Обновление пользователя: {}.", user);
+        Optional<User> existingUser = userStorage.getUserById(user.getId());
+        if (existingUser.isPresent()) {
+            userStorage.update(user);
+            return user;
+        } else {
+            throw new NotFoundException("Пользователь с таким id не найден");
+        }
+    }
+
+    public boolean existsById(int userId) {
+        return userStorage.getUserById(userId).isPresent();
+    }
+
+    public boolean areFriends(int userId, int friendId) {
+        return userStorage.areFriends(userId, friendId);
     }
 
     public Optional<User> getUserById(int id) {
@@ -53,13 +65,11 @@ public class UserService {
         User friend = userStorage.getUserById(friendId)
                 .orElseThrow(() -> new NotFoundException("Друг с id " + friendId + " не найден"));
 
-        if (user.getFriends().contains(friendId)) {
+        if (userStorage.areFriends(userId, friendId)) {
             throw new ValidationException("Пользователь уже добавлен в друзья");
         }
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-        userStorage.update(user);
-        userStorage.update(friend);
+
+        userStorage.addFriendship(userId, friendId);
     }
 
     public void removeFriend(int userId, int friendId) throws NotFoundException {
@@ -68,24 +78,22 @@ public class UserService {
         User friend = userStorage.getUserById(friendId)
                 .orElseThrow(() -> new NotFoundException("Друг с id " + friendId + " не найден"));
 
-        if (!user.getFriends().contains(friendId)) {
-            return;
-        }
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-        userStorage.update(user);
-        userStorage.update(friend);
+        userStorage.removeFriendship(userId, friendId);
     }
 
     public List<User> getFriends(int userId) throws NotFoundException {
+        User user = userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+
         return userStorage.getFriends(userId);
     }
 
-    public List<User> getCommonFriends(int userId, int otherId) {
+    public List<User> getCommonFriends(int userId, int otherId) throws NotFoundException {
         User user = userStorage.getUserById(userId)
-                .orElseThrow(() -> new ValidationException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         User otherUser = userStorage.getUserById(otherId)
-                .orElseThrow(() -> new ValidationException("Другой пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Другой пользователь не найден"));
 
         Set<Integer> commonFriendsIds = new HashSet<>(user.getFriends());
         commonFriendsIds.retainAll(otherUser.getFriends());
