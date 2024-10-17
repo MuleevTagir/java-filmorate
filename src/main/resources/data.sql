@@ -1,12 +1,12 @@
 INSERT INTO
     genres (name)
 VALUES
-    ('Боевик'),
+    ('Комедия'),
     ('Драма'),
     ('Мультфильм'),
     ('Триллер'),
-    ('Комедия'),
-    ('Документальный');
+    ('Документальный'),
+    ('Боевик');
 MERGE INTO
     mpa_ratings (rating, description)
         KEY (rating)
