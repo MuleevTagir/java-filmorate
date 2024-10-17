@@ -79,14 +79,18 @@ public class UserService {
     }
 
     public List<User> getFriends(int userId) throws NotFoundException {
+        User user = userStorage.getUserById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+
         return userStorage.getFriends(userId);
     }
 
-    public List<User> getCommonFriends(int userId, int otherId) {
+    public List<User> getCommonFriends(int userId, int otherId) throws NotFoundException {
         User user = userStorage.getUserById(userId)
-                .orElseThrow(() -> new ValidationException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         User otherUser = userStorage.getUserById(otherId)
-                .orElseThrow(() -> new ValidationException("Другой пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Другой пользователь не найден"));
 
         Set<Integer> commonFriendsIds = new HashSet<>(user.getFriends());
         commonFriendsIds.retainAll(otherUser.getFriends());
