@@ -4,8 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaRatingStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
@@ -16,23 +20,32 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final GenreStorage genreStorage;
+    private final MpaRatingStorage mpaRatingStorage;
 
     private int id = 0;
 
     public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage) {
+                       @Qualifier("UserDbStorage") UserStorage userStorage,
+                       @Qualifier("GenreDbStorage") GenreStorage genreStorage,
+                       @Qualifier("MpaRatingDbStorage") MpaRatingStorage mpaRatingStorage
+    ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.genreStorage = genreStorage;
+        this.mpaRatingStorage = mpaRatingStorage;
     }
 
     public Film add(Film film) throws NotFoundException {
         log.info("Добавление фильма: {}.", film);
         film.setId(this.getNextId());
+        validateFilmWithDependencies(film);
         return filmStorage.addFilm(film);
     }
 
     public Film update(Film film) throws NotFoundException {
         log.info("Обновление фильма: {}.", film);
+        validateFilmWithDependencies(film);
         filmStorage.getFilmById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с таким id не найден"));
         return filmStorage.updateFilm(film);
@@ -76,6 +89,23 @@ public class FilmService {
 
     public boolean existsById(int filmId) throws NotFoundException {
         return filmStorage.getFilmById(filmId).isPresent();
+    }
+
+    private void validateFilmWithDependencies(Film film) {
+        if (film.getMpa() == null || film.getMpa().getId() == 0) {
+            throw new ValidationException("MPA рейтинг не может быть пустым");
+        }
+        if (!mpaRatingStorage.getMpaById(film.getMpa().getId()).isPresent()) {
+            throw new ValidationException("MPA рейтинг с id " + film.getMpa().getId() + " не найден");
+        }
+
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            for (Genre genre : film.getGenres()) {
+                if (!genreStorage.getGenreById(genre.getId()).isPresent()) {
+                    throw new ValidationException("Жанр с id " + genre.getId() + " не найден");
+                }
+            }
+        }
     }
 
     private int getNextId() {
