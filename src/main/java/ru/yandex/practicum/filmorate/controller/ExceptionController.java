@@ -4,8 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.client.HttpClientErrorException.BadRequest;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.ErrorMessage;
 
 @RestControllerAdvice
@@ -18,8 +18,8 @@ public class ExceptionController {
                 .body(new ErrorMessage(exception.getMessage()));
     }
 
-    @ExceptionHandler(BadRequest.class)
-    public ResponseEntity<ErrorMessage> badRequestException(BadRequest exception) {
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorMessage> handleValidationException(ValidationException exception) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorMessage(exception.getMessage()));
