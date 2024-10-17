@@ -19,19 +19,19 @@ import java.util.List;
 public class FilmService {
 
     private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private final UserService userService;
     private final GenreStorage genreStorage;
     private final MpaRatingStorage mpaRatingStorage;
 
     private int id = 0;
 
     public FilmService(@Qualifier("FilmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("UserDbStorage") UserStorage userStorage,
+                       UserService  userService,
                        @Qualifier("GenreDbStorage") GenreStorage genreStorage,
                        @Qualifier("MpaRatingDbStorage") MpaRatingStorage mpaRatingStorage
     ) {
         this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
+        this.userService = userService;
         this.genreStorage = genreStorage;
         this.mpaRatingStorage = mpaRatingStorage;
     }
@@ -65,17 +65,17 @@ public class FilmService {
     public void addLike(int filmId, int userId) throws NotFoundException {
         Film film = filmStorage.getFilmById(filmId)
                 .orElseThrow(() -> new NotFoundException("Фильм не найден"));
-        if (userStorage.getUserById(userId).isEmpty()) {
+        if (!userService.existsById(userId)) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
-        film.getLikes().add(userId);
-        filmStorage.updateFilm(film);
+
+        filmStorage.addLikeToFilm(filmId, userId);
     }
 
     public void removeLike(int filmId, int userId) throws NotFoundException {
         Film film = filmStorage.getFilmById(filmId)
                 .orElseThrow(() -> new NotFoundException("Фильм не найден"));
-        if (userStorage.getUserById(userId).isEmpty()) {
+        if (!userService.existsById(userId)) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
         film.getLikes().remove(userId);
@@ -83,7 +83,6 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count) throws NotFoundException {
-        log.info("Получить топ-{} фильмов.", count);
         return filmStorage.getPopularFilms(count);
     }
 
